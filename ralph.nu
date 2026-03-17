@@ -77,28 +77,6 @@ export def main [
   | ignore
 }
 
-# One-shot ask: fire a prompt on the stream and return the response text.
-# Useful inside judge closures for LLM-as-judge.
-export def ask [
-  --provider-ptr (-p): string
-] {
-  let prompt = $in
-  let user_meta = {
-    role: "user"
-    content_type: "application/json"
-    options: ({} | if ($provider_ptr | is-not-empty) { insert provider_ptr $provider_ptr } else { $in })
-  }
-  let turn = [{type: "text" text: $prompt}] | to json | .append gpt.turn --meta $user_meta
-  let call = .append gpt.call --meta {continues: $turn.id}
-  let response = .cat -f --after $call.id
-    | where { ($in.topic in ["gpt.turn" "gpt.error"]) and ($in.meta?.frame_id? == $call.id) }
-    | first
-  if $response.topic == "gpt.error" {
-    error make {msg: $"ralph ask error: ($response.meta?.error?)"}
-  }
-  extract-text $response
-}
-
 # Extract text content from a response frame
 def extract-text [frame: record] {
   .cas $frame.hash | from json

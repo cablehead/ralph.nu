@@ -37,14 +37,13 @@ The judge receives the response text. Return null to stop, or a string to contin
 
 ### LLM-as-judge
 
-Use `ralph ask` inside the judge to make a separate LLM call:
+Use `gpt` inside the judge -- it streams to the terminal and returns content on the pipeline:
 
 ```nushell
 "Write a haiku about the ocean" | ralph -p milli -n 3 --judge {|response|
   let verdict = $"Rate this haiku. Reply ONLY DONE if evocative, or give a brief suggestion.
 
-Haiku:
-($response)" | ralph ask -p milli
+($response)" | gpt -p milli | where type == "text" | get text | str join
   if "DONE" in ($verdict | str upcase) { null } else { $verdict }
 }
 ```
